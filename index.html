@@ -1,32 +1,219 @@
 <!DOCTYPE html>
 <html lang="en">
-	
+	<!-- 
+		This is a simple tool to visual msgpack data. 
+		I haven't bothered with using jQuery etc..
+		because I wanted to keep the whole thing a 
+		single file.
+		Also, it's not cross browser compatible so suck it!
+	-->
 	<head>
 		<meta charset="utf-8" />
 		<title>
 			msgpack visualizer
 		</title>
 		<style>
+html, body, div, span,
+h1, h2, p, a, form, label {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+body {
+	line-height: 1;
+	padding: 0px 8px;
+	font-family: sans-serif;
+}
+h1 {
+	font-size: 48px;
+	margin-bottom: 8px;
+}
+h2 {
+	font-size: 16px;
+	margin-bottom: 8px;
+}
+			#datadisplay {
+				width: 400px; 
+				height: 100%;
+				overflow-y:scroll; 
+				font-family: monospace;
+				vertical-align: top;
+				float: left;
+			}
+			#datadisplay a {
+				margin-right: 8px;
+				text-decoration: none;
+				color: #333;
+				text-transform: uppercase;
+				float: left;
+			}
+			#datadisplay a.highlight {
+				color: #F33;
+			}
+			#output {
+				margin-left: 440px;
+				overflow-y:scroll; 
+			}
 		</style>
 		<!-- Using the awesome base64 -> ArrayBuffer lib by Daniel Guerrero -->
-		<script type="text/javascript" src="https://raw.github.com/danguer/blog-examples/master/js/base64-binary.js">
-		</script>
 		<script type="text/javascript">
+		/*
+		https://raw.github.com/danguer/blog-examples/master/js/base64-binary.js
+		Copyright (c) 2011, Daniel Guerrero
+		All rights reserved.
 
+		Redistribution and use in source and binary forms, with or without
+		modification, are permitted provided that the following conditions are met:
+			* Redistributions of source code must retain the above copyright
+			  notice, this list of conditions and the following disclaimer.
+			* Redistributions in binary form must reproduce the above copyright
+			  notice, this list of conditions and the following disclaimer in the
+			  documentation and/or other materials provided with the distribution.
+			* Neither the name of the Daniel Guerrero nor the
+			  names of its contributors may be used to endorse or promote products
+			  derived from this software without specific prior written permission.
 
-		// Logger
-		var output;
-		function log(str, linebreak) {
-			var p = document.createElement("div");
-			p.innerText = str;
-			output.appendChild(p);
-			if(linebreak) {
-				output.appendChild(document.createElement("hr"));
+		THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+		ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+		WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+		DISCLAIMED. IN NO EVENT SHALL DANIEL GUERRERO BE LIABLE FOR ANY
+		DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+		(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+		LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+		ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+		(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+		SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+		 */
+
+		/**
+		 * Uses the new array typed in javascript to binary base64 encode/decode
+		 * at the moment just decodes a binary base64 encoded
+		 * into either an ArrayBuffer (decodeArrayBuffer)
+		 * or into an Uint8Array (decode)
+		 * 
+		 * References:
+		 * https://developer.mozilla.org/en/JavaScript_typed_arrays/ArrayBuffer
+		 * https://developer.mozilla.org/en/JavaScript_typed_arrays/Uint8Array
+		 */
+
+		var Base64Binary = {
+			_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+
+			/* will return a  Uint8Array type */
+			decodeArrayBuffer: function(input) {
+				var bytes = Math.ceil((3 * input.length) / 4.0);
+				var ab = new ArrayBuffer(bytes);
+				this.decode(input, ab);
+
+				return ab;
+			},
+
+			decode: function(input, arrayBuffer) {
+				//get last chars to see if are valid
+				var lkey1 = this._keyStr.indexOf(input.charAt(input.length - 1));
+				var lkey2 = this._keyStr.indexOf(input.charAt(input.length - 1));
+
+				var bytes = Math.ceil((3 * input.length) / 4.0);
+				if (lkey1 == 64) bytes--; //padding chars, so skip
+				if (lkey2 == 64) bytes--; //padding chars, so skip
+				var uarray;
+				var chr1, chr2, chr3;
+				var enc1, enc2, enc3, enc4;
+				var i = 0;
+				var j = 0;
+
+				if (arrayBuffer) uarray = new Uint8Array(arrayBuffer);
+				else uarray = new Uint8Array(bytes);
+
+				input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+
+				for (i = 0; i < bytes; i += 3) {
+					//get the 3 octects in 4 ascii chars
+					enc1 = this._keyStr.indexOf(input.charAt(j++));
+					enc2 = this._keyStr.indexOf(input.charAt(j++));
+					enc3 = this._keyStr.indexOf(input.charAt(j++));
+					enc4 = this._keyStr.indexOf(input.charAt(j++));
+
+					chr1 = (enc1 << 2) | (enc2 >> 4);
+					chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+					chr3 = ((enc3 & 3) << 6) | enc4;
+
+					uarray[i] = chr1;
+					if (enc3 != 64) uarray[i + 1] = chr2;
+					if (enc4 != 64) uarray[i + 2] = chr3;
+				}
+
+				return uarray;
 			}
 		}
 
+		function highlight(elems, className) {
+			elems.forEach(function(elem) {
+				elem.className = className;
+			});
+		}
+
+		function onPositionHover() {
+			var allElemsNodeList = datadisplay.getElementsByTagName("a");
+			var allElems = [];
+			for(var i=0, ii=allElemsNodeList.length; i<ii; i++) {
+				allElems.push(allElemsNodeList[i]);
+			}
+			highlight(allElems, "");
+			var coords = this.rel.split(",");
+			var start = parseInt(coords[0], 10);
+			var end = start + parseInt(coords[1], 10);
+			highlight(allElems.filter(function(elem) {
+				var indx = parseInt(elem.rel, 10);
+				return indx >= start && indx <= end;
+			}), "highlight");
+		}
+
+		// Logger
+		var logoutput;
+		var datadisplay;
+		var jsonobj;
+		function errlog(str) {
+			var div = document.createElement("div");
+			div.innerText = str;
+			logoutput.appendChild(div);
+		}
+
+		function log(position, length, str) {
+			var div = document.createElement("div");
+			var a = document.createElement("a");
+			a.href = "#";
+			a.rel = position + "," + length;
+			a.innerHTML = "position " + position + ": ";
+			a.addEventListener("mouseover", onPositionHover);
+			div.appendChild(a);
+			var span = document.createElement("span");
+			span.innerText = str;
+			div.appendChild(span);
+			logoutput.appendChild(div);
+		}
+
 		function clear() {
-			output.innerHTML = "";
+			logoutput.innerHTML = "";
+			datadisplay.innerHTML = "";
+			jsonobj.innerHTML = "";
+		}
+
+		// adds a byteval to the list
+		function displayByte(byteVal, indx) {
+			var byteStr = byteVal.toString(16);
+			if(byteStr.length == 1) {
+				byteStr = "0" + byteStr;
+			}
+			var a = document.createElement("a");
+			a.href = "#";
+			a.id = "byte_" + indx;
+			a.rel = indx;
+			a.innerHTML = byteStr;
+			datadisplay.appendChild(a);
 		}
 
 		// http://jsfromhell.com/geral/utf-8
@@ -35,11 +222,11 @@
 			var byteCount = uint8Buff.byteLength;
 			var output = "";
 			var a, b;
-			for(var i = 0;i < byteCount; i++) {
+			for (var i = 0; i < byteCount; i++) {
 				a = uint8Buff[i];
-				if(a & 0x80) {
+				if (a & 0x80) {
 					b = uint8Buff[i + 1];
-					if( ((a & 0xfc) == 0xc0) && ((b & 0xc0) == 0x80) ) {
+					if (((a & 0xfc) == 0xc0) && ((b & 0xc0) == 0x80)) {
 						output += String.fromCharCode(((a & 0x03) << 6) + (b & 0x3f));
 					} else {
 						output += String.fromCharCode(128);
@@ -49,7 +236,7 @@
 					output += String.fromCharCode(a);
 				}
 			}
-        	return output;
+			return output;
 		}
 
 		// javascript msgpack parsing taken from
@@ -86,147 +273,165 @@
 				var value, length;
 				switch (type) {
 					// nil
-					case 0xc0:
-						log("position: " + offset + " is NULL");
-						offset++;
-						return null;
+				case 0xc0:
+					log(offset, 1, "NULL");
+					offset++;
+					return null;
 					// false
-					case 0xc2:
-						log("position: " + offset + " is false");
-						offset++;
-						return false;
+				case 0xc2:
+					log(offset, 1, "false");
+					offset++;
+					return false;
 					// true
-					case 0xc3:
-						log("position: " + offset + " is true");
-						offset++;
-						return true;
+				case 0xc3:
+					log(offset, 1, "true");
+					offset++;
+					return true;
 					// float      
-					case 0xca:
-						value = dataView.getFloat32(offset + 1);
-						log("position: " + offset + " is a float marker - value is " + value);
-						offset += 5;
-						return value;
+				case 0xca:
+					value = dataView.getFloat32(offset + 1);
+					log(offset, 5, "float value " + value);
+					offset += 5;
+					return value;
 					// double
-					case 0xcb:
-						value = dataView.getFloat64(offset + 1);
-						log("position: " + offset + " is a double marker - value is " + value);
-						offset += 9;
-						return value;
+				case 0xcb:
+					value = dataView.getFloat64(offset + 1);
+					log(offset, 9, "double value " + value);
+					offset += 9;
+					return value;
 					// uint8
-					case 0xcc:
-						value = dataView.getUint8(offset + 1);
-						log("position: " + offset + " is a uint8 marker - value is " + value);
-						offset += 2;
-						return value;
+				case 0xcc:
+					value = dataView.getUint8(offset + 1);
+					log(offset, 2, "uint8 value " + value);
+					offset += 2;
+					return value;
 					// uint 16
-					case 0xcd:
-						value = dataView.getUint16(offset + 1);
-						log("position: " + offset + " is a uint16 marker - value is " + value);
-						offset += 3;
-						return value;
+				case 0xcd:
+					value = dataView.getUint16(offset + 1);
+					log(offset, 3, "uint16 value " + value);
+					offset += 3;
+					return value;
 					// uint 32
-					case 0xce:
-						value = dataView.getUint32(offset + 1);
-						log("position: " + offset + " is a uint32 marker - value is " + value);
-						offset += 5;
-						return value;
+				case 0xce:
+					value = dataView.getUint32(offset + 1);
+					log(offset, 5, "uint32 value " + value);
+					offset += 5;
+					return value;
 					// uint64
-					case 0xcf:
-						// value = buffer.readUInt64BE(offset + 1);
-						log("position: " + offset + " is a uint64 marker - cannot parse uint64 to javascript, setting to Infinity");
-						offset += 9;
-						return Infinity;
+				case 0xcf:
+					// value = buffer.readUInt64BE(offset + 1);
+					log(offset, 9, "uint64 marker - cannot parse uint64 to javascript, setting to Infinity");
+					offset += 9;
+					return Infinity;
 					// int 8
-					case 0xd0:
-						value = dataView.getInt8(offset + 1);
-						log("position: " + offset + " is an int8 marker - value is " + value);
-						offset += 2;
-						return value;
+				case 0xd0:
+					value = dataView.getInt8(offset + 1);
+					log(offset, 2, "int8 value " + value);
+					offset += 2;
+					return value;
 					// int 16
-					case 0xd1:
-						value = dataView.getInt16(offset + 1);
-						log("position: " + offset + " is an int16 marker - value is " + value);
-						offset += 3;
-						return value;
+				case 0xd1:
+					value = dataView.getInt16(offset + 1);
+					log(offset, 3, "int16 value " + value);
+					offset += 3;
+					return value;
 					// int 32
-					case 0xd2:
-						value = dataView.getInt32(offset + 1);
-						log("position: " + offset + " is an int16 marker - value is " + value);
-						offset += 5;
-						return value;
+				case 0xd2:
+					value = dataView.getInt32(offset + 1);
+					log(offset, 5, "int16 value " + value);
+					offset += 5;
+					return value;
 					// int 64
-					case 0xd3:
-						log("position: " + offset + " is an int64 marker - cannot parse uint64 to javascript, setting to Infinity");
-						offset += 9;
-						return Infinity;
+				case 0xd3:
+					log(offset, 9, "int64 marker - cannot parse uint64 to javascript, setting to Infinity");
+					offset += 9;
+					return Infinity;
 					// map 16
-					case 0xde:
-						length = dataView.getUint16(offset + 1);
-						log("position: " + offset + " is a map16 marker with length " + length);
-						offset += 3;
-						return map(length);
+				case 0xde:
+					length = dataView.getUint16(offset + 1);
+					var startOffset = offset;
+					offset += 3;
+					var result = map(length);
+					log(startOffset, offset - startOffset, "map16 marker with " + length + " items");
+					return result;
 					// map 32
-					case 0xdf:
-						length = dataView.getUint32(offset + 1);
-						log("position: " + offset + " is a map32 marker with length " + length);
-						offset += 5;
-						return map(length);
+				case 0xdf:
+					length = dataView.getUint32(offset + 1);
+					var startOffset = offset;
+					offset += 5;
+					var result = map(length);
+					log(startOffset, offset - startOffset, "map32 marker with " + length + " items");
+					return result;
 					// array 16
-					case 0xdc:
-						length = dataView.getUint16(offset + 1);
-						log("position: " + offset + " is an array16 marker with length " + length);
-						offset += 3;
-						return array(length);
+				case 0xdc:
+					length = dataView.getUint16(offset + 1);
+					var startOffset = offset;
+					offset += 3;
+					var result = array(length);
+					log(startOffset, offset - startOffset, "array16 marker with " + length + " items");
+					return result;
 					// array 32
-					case 0xdd:
-						length = dataView.getUint32(offset + 1);
-						log("position: " + offset + " is an array32 marker with length " + length);
-						offset += 5;
-						return array(length);
+				case 0xdd:
+					length = dataView.getUint32(offset + 1);
+					var startOffset = offset;
+					offset += 5;
+					var result = array(length);
+					log(startOffset, offset - startOffset, "array32 marker with " + length + " items");
+					return result;
 					// raw 16
-					case 0xda:
-						length = dataView.getUint16(offset + 1);
-						log("position: " + offset + " is a raw16 marker with length " + length);
-						offset += 3;
-						return raw(length);
+				case 0xda:
+					length = dataView.getUint16(offset + 1);
+					var startOffset = offset;
+					offset += 3;
+					var result = raw(length);
+					log(startOffset, offset - startOffset, "raw16 marker - " + result);
+					return result;
 					// raw 32
-					case 0xdb:
-						length = dataView.getUint32(offset + 1);
-						log("position: " + offset + " is a raw32 marker with length " + length);
-						offset += 5;
-						return raw(length);
+				case 0xdb:
+					length = dataView.getUint32(offset + 1);
+					var startOffset = offset;
+					offset += 5;
+					var result = raw(length);
+					log(startOffset, offset - startOffset, "raw32 marker - " + result);
+					return result;
 				}
 				// FixRaw
 				if ((type & 0xe0) === 0xa0) {
 					length = type & 0x1f;
-					log("position: " + offset + " is a raw marker with length " + length);
+					var startOffset = offset;
 					offset++;
-					return raw(length);
+					var result = raw(length);
+					log(startOffset, offset - startOffset, "fixed length raw marker - " + result);
+					return result;
 				}
 				// FixMap
 				if ((type & 0xf0) === 0x80) {
 					length = type & 0x0f;
-					log("position: " + offset + " is a map marker with length " + length);
+					var startOffset = offset;
 					offset++;
-					return map(length);
+					var result = map(length);
+					log(startOffset, offset - startOffset, "fixed length map marker with " + length + " items");
+					return result;
 				}
 				// FixArray
 				if ((type & 0xf0) === 0x90) {
 					length = type & 0x0f;
-					log("position: " + offset + " is an array marker with length " + length);
+					var startOffset = offset;
 					offset++;
-					return array(length);
+					var result = array(length);
+					log(startOffset, offset - startOffset, "fixed length array marker with " + length + " items");
+					return result;
 				}
 				// Positive FixNum
 				if ((type & 0x80) === 0x00) {
-					log("position: " + offset + " is a postive fix length number with value " + type);
+					log(offset, 1, "postive fix length number with value " + type);
 					offset++;
 					return type;
 				}
 				// Negative Fixnum
 				if ((type & 0xe0) === 0xe0) {
 					value = dataView.getInt8(offset);
-					log("position: " + offset + " is a negative fix length number with value " + value);
+					log(offset, 1, "negative fix length number with value " + value);
 					offset++;
 					return value;
 				}
@@ -235,28 +440,41 @@
 			var value = parse();
 			if (offset !== dataView.byteLength) {
 				var overflow = dataView.byteLength - offset;
-				log(overflow + " trailing bytes");
+				errlog(overflow + " trailing bytes");
 				var remainBytes = dataView.buffer.slice(offset, overflow);
-				log("trailing chars: " + raw(overflow), true);
+				errlog("trailing chars: " + raw(overflow));
 
-				if(remainBytes.byteLength) {
-					setTimeout(function(){
-						try{
-							log("attempting to parse trailing chars");
-							log(decode(new DataView(remainBytes)));
-						} catch(e) {
-							log("Error parsing input: " + e.message);
-							e.stack && log(e.stack);
-						}
-					}, 0)
-				}
+				// if (remainBytes.byteLength) {
+				//     setTimeout(function() {
+				//         try {
+				//             errlog("attempting to parse trailing chars");
+				//             errlog(decode(new DataView(remainBytes)));
+				//         } catch (e) {
+				//             errlog("Error parsing input: " + e.message);
+				//             e.stack && errlog(e.stack);
+				//         }
+				//     }, 0)
+				// }
 			}
 			return value;
 		}
 
+		var outputscroller;
 		function parseBase64() {
-			if (!output) {
-				output = document.getElementById("output")
+			var wh = window.innerHeight;
+			if (!logoutput) {
+				logoutput = document.getElementById("log");
+			}
+			if (!jsonobj) {
+				jsonobj = document.getElementById("json-obj");
+			}
+			if(!datadisplay) {
+				datadisplay = document.getElementById("datadisplay");
+				datadisplay.style.height = (wh - 110) + "px";
+			}
+			if(!outputscroller) {
+				outputscroller = document.getElementById("output");
+				outputscroller.style.height = (wh - 110) + "px";
 			}
 			clear();
 			var input = document.getElementById("data").value;
@@ -264,37 +482,45 @@
 			try {
 				buff = Base64Binary.decodeArrayBuffer(input);
 				var dataView = new DataView(buff);
-				log(JSON.stringify(decode(dataView)), true);
-			} catch (e) { 
-				log("Error parsing input: " + e.message);
-				e.stack && log(e.stack);
+				for(var i=0, ii=dataView.byteLength; i<ii; i++) {
+					var byteVal = dataView.getUint8(i);
+					displayByte(byteVal, i);
+				}
+				jsonobj.innerHTML = JSON.stringify(decode(dataView));
+			} catch (e) {
+				errlog("Error parsing input: " + e.message);
+				e.stack && errlog(e.stack);
 			}
 		}
 		</script>
 	</head>
 	
 	<body id="home">
+		<a href="https://github.com/sugendran/msgpack-visualizer"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png" alt="Fork me on GitHub"></a>
 		<div id="header">
 			<h1>
 				msgpack visualizer
 			</h1>
+			<h2>
+				Created by sugendran in an attempt to find out why things are breaking.
+				It's not pretty, but it works :)
+			</h2>
 		</div>
 		<div id="content">
 			<div>
-				<textarea id="data" style="width:98%" rows="8">Paste Base 64 Here</textarea>
-				<button onclick="parseBase64()">
-					Click this to parse
-				</button>
+				<form action="javascript:parseBase64()">
+					<label for="data">Base64: </label>
+					<input type="text" id="data" style="width:60vw" value="gaVoZWxsb6V3b3JsZA==" />
+					<button onclick="parseBase64()">Parse</button>
+				</form>
 			</div>
-			<div id="output">
-				Output will be put here
-			</div>
-		</div>
-		<div id="footer">
-			<hr />
 			<div>
-				Created by sugendran in an attempt to find out why things are breaking
-			</div>
+				<div id="datadisplay"></div>
+				<div id="output">
+					<div id="json-obj" style="margin-bottom: 16px;"></div>
+					<div id="log"></div>
+				</div>
+			<div>
 		</div>
 	</body>
 
