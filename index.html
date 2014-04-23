@@ -165,7 +165,7 @@ h2 {
 			highlight(allElems, "");
 			var coords = this.rel.split(",");
 			var start = parseInt(coords[0], 10);
-			var end = start + parseInt(coords[1], 10);
+			var end = start + parseInt(coords[1], 10) - 1;
 			highlight(allElems.filter(function(elem) {
 				var indx = parseInt(elem.rel, 10);
 				return indx >= start && indx <= end;
