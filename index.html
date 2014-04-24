@@ -51,7 +51,7 @@ h2 {
 				float: left;
 			}
 			#datadisplay a.highlight {
-				color: #F33;
+				color: #33F;
 			}
 			#output {
 				margin-left: 440px;
@@ -165,7 +165,7 @@ h2 {
 			highlight(allElems, "");
 			var coords = this.rel.split(",");
 			var start = parseInt(coords[0], 10);
-			var end = start + parseInt(coords[1], 10);
+			var end = start + parseInt(coords[1], 10) - 1;
 			highlight(allElems.filter(function(elem) {
 				var indx = parseInt(elem.rel, 10);
 				return indx >= start && indx <= end;
@@ -288,6 +288,30 @@ h2 {
 					offset++;
 					return true;
 					// float      
+				case 0xc4:
+					length = dataView.getUint8(offset + 1);
+					var startOffset = offset;
+					offset += 2;
+					var result = raw(length);
+					log(startOffset, offset - startOffset, "bin 8 marker with " + length + " items");
+					return result;
+					// bin 8
+				case 0xc5:
+					length = dataView.getUint16(offset + 1);
+					var startOffset = offset;
+					offset += 3;
+					var result = raw(length);
+					log(startOffset, offset - startOffset, "bin 16 marker with " + length + " items");
+					return result;
+					// bin 16
+				case 0xc6:
+					length = dataView.getUint32(offset + 1);
+					var startOffset = offset;
+					offset += 5;
+					var result = raw(length);
+					log(startOffset, offset - startOffset, "bin 32 marker with " + length + " items");
+					return result;
+					// bin 32
 				case 0xca:
 					value = dataView.getFloat32(offset + 1);
 					log(offset, 5, "float value " + value);
