@@ -287,7 +287,7 @@ h2 {
 					log(offset, 1, "true");
 					offset++;
 					return true;
-					// float      
+					// bin 8
 				case 0xc4:
 					length = dataView.getUint8(offset + 1);
 					var startOffset = offset;
@@ -295,7 +295,7 @@ h2 {
 					var result = raw(length);
 					log(startOffset, offset - startOffset, "bin 8 marker with " + length + " items");
 					return result;
-					// bin 8
+					// bin 16
 				case 0xc5:
 					length = dataView.getUint16(offset + 1);
 					var startOffset = offset;
@@ -303,7 +303,7 @@ h2 {
 					var result = raw(length);
 					log(startOffset, offset - startOffset, "bin 16 marker with " + length + " items");
 					return result;
-					// bin 16
+					// bin 32
 				case 0xc6:
 					length = dataView.getUint32(offset + 1);
 					var startOffset = offset;
@@ -311,7 +311,7 @@ h2 {
 					var result = raw(length);
 					log(startOffset, offset - startOffset, "bin 32 marker with " + length + " items");
 					return result;
-					// bin 32
+					// float
 				case 0xca:
 					value = dataView.getFloat32(offset + 1);
 					log(offset, 5, "float value " + value);
@@ -401,6 +401,14 @@ h2 {
 					offset += 5;
 					var result = array(length);
 					log(startOffset, offset - startOffset, "array32 marker with " + length + " items");
+					return result;
+					// raw 8
+				case 0xd9:
+					length = dataView.getUint8(offset + 1);
+					var startOffset = offset;
+					offset += 2;
+					var result = raw(length);
+					log(startOffset, offset - startOffset, "raw8 marker - " + result);
 					return result;
 					// raw 16
 				case 0xda:
