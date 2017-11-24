@@ -494,15 +494,11 @@ h2 {
 			}
 			return value;
 		}
-			
-		function shouldBeautify(){
-			var chk = document.getElementById('chk_beautify');
-			return chk.checked;
-		}
-
+		
 		function beautify(){
-		    var jsonobj = document.getElementById("json-obj");
-		    if (shouldBeautify()){
+			var jsonobj = document.getElementById("json-obj");
+			var chk = document.getElementById('chk_beautify');
+			if (chk.checked){
 				if (!jsonobj.className.match(/beautiful/)) {
 					jsonobj.className += ' beautiful';
 				}
@@ -538,8 +534,7 @@ h2 {
 					var byteVal = dataView.getUint8(i);
 					displayByte(byteVal, i);
 				}
-				var indent = shouldBeautify() ? 4 : null;
-				jsonobj.innerHTML = JSON.stringify(decode(dataView), null, indent);
+				jsonobj.innerHTML = JSON.stringify(decode(dataView), null, 4);
 				beautify();
 			} catch (e) {
 				errlog("Error parsing input: " + e.message);
