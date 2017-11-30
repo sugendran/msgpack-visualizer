@@ -524,9 +524,56 @@ h2 {
 				e.stack && errlog(e.stack);
 			}
 		}
+
+		// Document ready function, based on http://youmightnotneedjquery.com/
+		// Behaves like jQuery `$(document).ready(...)`.
+		function onDocumentReady(fn) {
+			if (document.readyState != 'loading'){
+				fn();
+			} else if (document.addEventListener) {
+				document.addEventListener('DOMContentLoaded', fn);
+			} else {
+				document.attachEvent('onreadystatechange', function() {
+					if (document.readyState != 'loading') {
+						fn();
+					}
+				});
+			}
+		}
+
+		// Parse URL hash parameters into an object.
+		// Based on https://stackoverflow.com/a/44169651
+		function getHashParams() {
+			var hash = window.location.hash.substr(1);
+			var result = hash.split('&').reduce(function(result, item) {
+				var parts = item.split('=');
+				result[parts[0]] = parts[1];
+				return result;
+			}, {});
+			return result;
+		}
+
+		// Decode an Urlencoded string
+		function urldecode(str) {
+			return decodeURIComponent((str+'').replace(/\+/g, '%20'));
+		}
+
+		onDocumentReady(function() {
+			// Load initial data from URL hash
+			var hashParams = getHashParams();
+			console.log('Hash params:', hashParams);
+
+			// Accept base64 data
+			if (hashParams['base64'] !== undefined) {
+				console.info('Loading base64 data from URL hash');
+				var data = hashParams['base64'];
+				var decoded = urldecode(data);
+				document.getElementById("data").value = decoded;
+			}
+		});
 		</script>
 	</head>
-	
+
 	<body id="home">
 		<a href="https://github.com/sugendran/msgpack-visualizer"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png" alt="Fork me on GitHub"></a>
 		<div id="header">
