@@ -3,6 +3,8 @@ msgpack-visualizer
 
 This is a simple visualizer of a msgpack object that I wrote to work out what was going wrong in my data. It's not pretty, nor is the code - it's just a quick and dirty tool. If you want to use it, it is hosted on github at http://sugendran.github.com/msgpack-visualizer/
 
+If you want to pass in the base64 data through the URL, append `#base64=<data>` to the URL, where `<data>` is the URL encoded base64 string.
+
 MIT LICENSE 
 ===========
 
