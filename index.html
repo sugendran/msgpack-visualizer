@@ -535,7 +535,7 @@ h2 {
 					displayByte(byteVal, i);
 				}
 				jsonobj.innerHTML = JSON.stringify(decode(dataView), null, 2);
-				beautify();
+				indent();
 			} catch (e) {
 				errlog("Error parsing input: " + e.message);
 				e.stack && errlog(e.stack);
