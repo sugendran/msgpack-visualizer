@@ -57,6 +57,10 @@ h2 {
 				margin-left: 440px;
 				overflow-y:scroll; 
 			}
+			#json-obj.beautiful {
+				font-family: monospace;
+				white-space: pre;
+			}
 		</style>
 		<!-- Using the awesome base64 -> ArrayBuffer lib by Daniel Guerrero -->
 		<script type="text/javascript">
@@ -490,6 +494,18 @@ h2 {
 			}
 			return value;
 		}
+		
+		function indent(){
+			var jsonobj = document.getElementById("json-obj");
+			var chk = document.getElementById('chk_beautify');
+			if (chk.checked){
+				if (!jsonobj.className.match(/beautiful/)) {
+					jsonobj.className += ' beautiful';
+				}
+			} else {
+				jsonobj.className = jsonobj.className.replace(' beautiful', '');
+			}
+		}
 
 		var outputscroller;
 		function parseBase64() {
@@ -518,7 +534,8 @@ h2 {
 					var byteVal = dataView.getUint8(i);
 					displayByte(byteVal, i);
 				}
-				jsonobj.innerHTML = JSON.stringify(decode(dataView));
+				jsonobj.innerHTML = JSON.stringify(decode(dataView), null, 2);
+				beautify();
 			} catch (e) {
 				errlog("Error parsing input: " + e.message);
 				e.stack && errlog(e.stack);
@@ -544,6 +561,7 @@ h2 {
 					<label for="data">Base64: </label>
 					<input type="text" id="data" style="width:60vw" value="gaVoZWxsb6V3b3JsZA==" />
 					<button onclick="parseBase64()">Parse</button>
+					<label><input type="checkbox" id="chk_beautify" onchange="indent()"> indent</label>
 				</form>
 			</div>
 			<div>
@@ -552,7 +570,7 @@ h2 {
 					<div id="json-obj" style="margin-bottom: 16px;"></div>
 					<div id="log"></div>
 				</div>
-			<div>
+			</div>
 		</div>
 	</body>
 
