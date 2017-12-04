@@ -541,10 +541,31 @@ h2 {
 				e.stack && errlog(e.stack);
 			}
 		}
+
+		function getQSParams() {
+			return window.location.search
+				.substr(1)
+				.split('&')
+				.reduce(function(result, item) {
+					var parts = item.split('=');
+					result[parts[0]] = decodeURIComponent(parts[1]);
+					return result;
+				}, { });
+		}
+
+		function checkUrl() {
+			var params = getQSParams();
+
+			// Accept base64 data
+			if (params['base64'] !== undefined) {
+				document.getElementById("data").value = params['base64'];
+				parseBase64();
+			}
+		};
 		</script>
 	</head>
 	
-	<body id="home">
+	<body id="home" onload="checkUrl()">
 		<a href="https://github.com/sugendran/msgpack-visualizer"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png" alt="Fork me on GitHub"></a>
 		<div id="header">
 			<h1>
