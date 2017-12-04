@@ -495,7 +495,7 @@ h2 {
 			return value;
 		}
 		
-		function beautify(){
+		function indent(){
 			var jsonobj = document.getElementById("json-obj");
 			var chk = document.getElementById('chk_beautify');
 			if (chk.checked){
@@ -534,7 +534,7 @@ h2 {
 					var byteVal = dataView.getUint8(i);
 					displayByte(byteVal, i);
 				}
-				jsonobj.innerHTML = JSON.stringify(decode(dataView), null, 4);
+				jsonobj.innerHTML = JSON.stringify(decode(dataView), null, 2);
 				beautify();
 			} catch (e) {
 				errlog("Error parsing input: " + e.message);
@@ -561,7 +561,7 @@ h2 {
 					<label for="data">Base64: </label>
 					<input type="text" id="data" style="width:60vw" value="gaVoZWxsb6V3b3JsZA==" />
 					<button onclick="parseBase64()">Parse</button>
-					<label><input type="checkbox" id="chk_beautify" onchange="beautify()"> beautify</label>
+					<label><input type="checkbox" id="chk_beautify" onchange="indent()"> indent</label>
 				</form>
 			</div>
 			<div>
