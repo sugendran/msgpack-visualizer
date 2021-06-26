@@ -274,7 +274,7 @@ h2 {
 
 			function parse() {
 				var type = dataView.getUint8(offset);
-				var value, length;
+				var value, length, ms32b, ls32b;
 				switch (type) {
 					// nil
 				case 0xc0:
@@ -347,10 +347,12 @@ h2 {
 					return value;
 					// uint64
 				case 0xcf:
-					// value = buffer.readUInt64BE(offset + 1);
-					log(offset, 9, "uint64 marker - cannot parse uint64 to javascript, setting to Infinity");
+					ms32b = dataView.getUint32(offset + 1);
+					ls32b = dataView.getUint32(offset + 5);
+					value = (BigInt(ms32b) << 32n) + BigInt(ls32b);
+					log(offset, 9, "uint64 value " + value);
 					offset += 9;
-					return Infinity;
+					return value;
 					// int 8
 				case 0xd0:
 					value = dataView.getInt8(offset + 1);
@@ -371,9 +373,12 @@ h2 {
 					return value;
 					// int 64
 				case 0xd3:
-					log(offset, 9, "int64 marker - cannot parse uint64 to javascript, setting to Infinity");
+					ms32b = dataView.getUint32(offset + 1);
+					ls32b = dataView.getUint32(offset + 5);
+					value = BigInt.asIntN(64, (BigInt(ms32b) << 32n) + BigInt(ls32b));
+					log(offset, 9, "int64 value " + value);
 					offset += 9;
-					return Infinity;
+					return value;
 					// map 16
 				case 0xde:
 					length = dataView.getUint16(offset + 1);
