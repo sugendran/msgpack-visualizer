@@ -539,12 +539,18 @@ h2 {
 					var byteVal = dataView.getUint8(i);
 					displayByte(byteVal, i);
 				}
-				jsonobj.innerHTML = JSON.stringify(decode(dataView), null, 2);
+				jsonobj.innerHTML = JSON.stringify(decode(dataView), bigIntJSONReplacer, 2);
 				indent();
 			} catch (e) {
 				errlog("Error parsing input: " + e.message);
 				e.stack && errlog(e.stack);
 			}
+		}
+
+		function bigIntJSONReplacer(key, value) {
+			return typeof value === 'bigint'
+				? value.toString()
+				: value;
 		}
 
 		function getQSParams() {
